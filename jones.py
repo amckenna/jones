@@ -5,41 +5,9 @@ import logging
 import os
 import pdb
 import sys
+import templates.test as templates
 
 logger = logging.getLogger(__name__)
-
-templates = {
-    'empty': {
-        'title': '',        # a short title for the template
-        'author': '',       # the author of the template
-        'created': '',      # when the template was created in YYYY-MM-DD format
-        'updated': '',      # when the template was last updated in YYYY-MM-DD format
-        'description': '',  # a few sentence description of the template
-        'notes': '',        # general guidance, caveats, help, etc. for using the template
-        'supplement': '',   # any supplemental text that will be included as tokens with the prompt
-        'prompt': '',       # the prompt itself
-        'suggested_model': '',      # the suggested llm model to use with this prompt
-        'suggested_temperature': '',# the suggested model temperature parameter to use with this model and prompt
-        'suggested_max-tokens': '', # the suggested number of max tokens parameter to set for this model and prompt
-        'suggested_top-p': '',      # the suggested top-p parameter to set for this model and prompt
-        'suggested_top-k': '',      # the suggested top-k parameter to set for this model and prompt
-    },
-    'pirate': {
-        'title': 'Speak like a pirate',
-        'author': 'https://github.com/amckenna/',
-        'created': '2024-04-01',
-        'updated': '2024-04-02',
-        'notes': 'The answer will mostly stay the same, in terms of content, but be in the voice of a pirate. It\'s silly, so not to be used seriously',
-        'description': 'This prompt will instruct the model to speak like a pirate, changing the tone, structure, and grammer.',
-        'supplement': '',
-        'prompt': 'Please answer the following question as if you were a pirate: ',
-        'suggested_model': 'Claude v3',
-        'suggested_temperature': '0.9',
-        'suggested_max-tokens': '100',
-        'suggested_top-p': '0.999',
-        'suggested_top-k': '250',
-    }
-}
 
 @click.command()
 @click.argument('user_input', required=True, default=sys.stdin.readline)
@@ -61,9 +29,9 @@ def main(user_input, envcreds, region, verbose, template, temperature, top_p, to
     prompt = build_prompt(user_input, template)
     if envcreds:
         logger.info('fetching creds from environment variables')
-        session = boto3.Session(aws_access_key_id=os.getenv('ACCESS_KEY'),
-                                aws_secret_access_key=os.getenv('SECRET_KEY'),
-                                aws_session_token=os.getenv('SESSION_TOKEN'),)
+        session = boto3.Session(aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                                aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+                                aws_session_token=os.getenv('AWS_SESSION_TOKEN'),)
         client = session.client(service_name='bedrock-runtime', region_name='us-west-2')
     else:
         logger.info('fetching creds from aws credentials file')
@@ -72,9 +40,13 @@ def main(user_input, envcreds, region, verbose, template, temperature, top_p, to
 
 def build_prompt(user_input, template):
     """Combine template with user input"""
-    if template:
-        logger.info('adding template: {} - {}'.format(template, templates[template]))
-        user_input = templates[template]['prompt'] + user_input
+    if template and template in templates.templates:
+        logger.info('template specified and found')
+        logger.info('adding template: {} - {}'.format(template, templates.templates[template]))
+        user_input = templates.templates[template]['prompt'] + user_input
+    elif template and template not in templates.templates:
+        logger.error('incorrect template specified')
+        sys.exit()
     return user_input
 
 def send_prompt(user_input, model_params, client):
