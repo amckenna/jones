@@ -1,11 +1,11 @@
 import boto3
 import click
+import glob
 import json
 import logging
 import os
 import pdb
 import sys
-import templates.test as templates
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +21,16 @@ logger = logging.getLogger(__name__)
 @click.option('--max-tokens', '-mt', type=click.INT, default=250, help='Set the max tokens returned by the model') # tokens
 def main(user_input, envcreds, region, verbose, template, temperature, top_p, top_k, max_tokens):
     if verbose: logging.basicConfig(level=logging.INFO)
-    logger.info('received from stdin: {}'.format(user_input))
+    logger.info('loading templates')
+    templates = load_templates()
+    logger.info('templates loaded')
     model_params = {'temperature': temperature,
                     'top_p': top_p,
                     'top_k': top_k,
                     'max_tokens': max_tokens}
-    prompt = build_prompt(user_input, template)
+    logger.info('setting model params: {}'.format(model_params))
+    logger.info('user input from stdin: {}'.format(user_input))
+    prompt = build_prompt(user_input, template, templates)
     if envcreds:
         logger.info('fetching creds from environment variables')
         session = boto3.Session(aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
@@ -38,16 +42,16 @@ def main(user_input, envcreds, region, verbose, template, temperature, top_p, to
         client = boto3.client(service_name='bedrock-runtime', region_name='us-west-2')
     click.echo(send_prompt(prompt, model_params, client))
 
-def build_prompt(user_input, template):
+def build_prompt(user_input, template, templates):
     """Combine template with user input"""
-    if template and template in templates.templates:
+    if template and template in templates:
         logger.info('template specified and found')
-        logger.info('adding template: {} - {}'.format(template, templates.templates[template]))
-        user_input = templates.templates[template]['prompt'] + user_input
-    elif template and template not in templates.templates:
+        logger.info('adding template: {} - {}'.format(template, templates[template]))
+        prompt = templates[template]['prompt'] + user_input
+    elif template and template not in templates:
         logger.error('incorrect template specified')
         sys.exit()
-    return user_input
+    return prompt
 
 def send_prompt(user_input, model_params, client):
     """Send user input to the model"""
@@ -79,6 +83,15 @@ def send_prompt(user_input, model_params, client):
     logger.info(json.dumps(response_body, indent=4))
 
     return response_body['content'][0]['text']
+
+def load_templates():
+    templates = {}
+    for file in glob.glob('templates/*.json'):
+        with open(file) as f:
+            d = json.load(f)
+            logger.info('loaded: {} - {}'.format(f.name,d))
+            templates[d['name']] = d
+    return templates
 
 if __name__ == "__main__":
     main()
