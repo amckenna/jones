@@ -2,6 +2,7 @@ import boto3
 import click
 import json
 import logging
+import os
 import pdb
 import sys
 
@@ -25,7 +26,7 @@ templates = {
     },
     'pirate': {
         'title': 'Speak like a pirate',
-        'author': 'Andrew McKenna',
+        'author': 'https://github.com/amckenna/',
         'created': '2024-04-01',
         'updated': '2024-04-02',
         'notes': 'The answer will mostly stay the same, in terms of content, but be in the voice of a pirate. It\'s silly, so not to be used seriously',
@@ -42,13 +43,15 @@ templates = {
 
 @click.command()
 @click.argument('user_input', required=True, default=sys.stdin.readline)
+@click.option('--envcreds', '-e', is_flag=True, default=False, show_default=True, help='User environment variables for loading AWS credentials or ~/.aws/credentials file')
+@click.option('--region', '-r', default='us-west-2', show_default=True, help='Specify AWS region')
 @click.option('--verbose', '-v', is_flag=True, default=False, show_default=True, help='Display verbose output')
 @click.option('--template', '-t', help='Specify a prompt template to include')
 @click.option('--temperature', '-tmp', type=click.FLOAT, default=0.9, help='Set the model temperature parameter') # temperature
 @click.option('--top-p', '-tp', type=click.FLOAT, default=0.999, help='Set the model Top-P parameter') # top-p
 @click.option('--top-k', '-tk', type=click.INT, default=250, help='Set the model Top-K parameter') # top-k
 @click.option('--max-tokens', '-mt', type=click.INT, default=250, help='Set the max tokens returned by the model') # tokens
-def main(user_input, verbose, template, temperature, top_p, top_k, max_tokens):
+def main(user_input, envcreds, region, verbose, template, temperature, top_p, top_k, max_tokens):
     if verbose: logging.basicConfig(level=logging.INFO)
     logger.info('received from stdin: {}'.format(user_input))
     model_params = {'temperature': temperature,
@@ -56,7 +59,16 @@ def main(user_input, verbose, template, temperature, top_p, top_k, max_tokens):
                     'top_k': top_k,
                     'max_tokens': max_tokens}
     prompt = build_prompt(user_input, template)
-    click.echo(send_prompt(prompt, model_params))
+    if envcreds:
+        logger.info('fetching creds from environment variables')
+        session = boto3.Session(aws_access_key_id=os.getenv('ACCESS_KEY'),
+                                aws_secret_access_key=os.getenv('SECRET_KEY'),
+                                aws_session_token=os.getenv('SESSION_TOKEN'),)
+        client = session.client(service_name='bedrock-runtime', region_name='us-west-2')
+    else:
+        logger.info('fetching creds from aws credentials file')
+        client = boto3.client(service_name='bedrock-runtime', region_name='us-west-2')
+    click.echo(send_prompt(prompt, model_params, client))
 
 def build_prompt(user_input, template):
     """Combine template with user input"""
@@ -65,10 +77,9 @@ def build_prompt(user_input, template):
         user_input = templates[template]['prompt'] + user_input
     return user_input
 
-def send_prompt(user_input, model_params):
+def send_prompt(user_input, model_params, client):
     """Send user input to the model"""
     logger.info('prompt: {}'.format(user_input))
-    brt = boto3.client(service_name='bedrock-runtime', region_name='us-west-2')
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",    
@@ -91,7 +102,7 @@ def send_prompt(user_input, model_params):
     accept = 'application/json'
     contentType = 'application/json'
 
-    response = brt.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
+    response = client.invoke_model(body=body, modelId=modelId, accept=accept, contentType=contentType)
     response_body = json.loads(response.get('body').read())
     logger.info(json.dumps(response_body, indent=4))
 
