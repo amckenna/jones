@@ -11,11 +11,11 @@
         "notes": "",        # general guidance, caveats, help, etc. for using the template
         "supplement": "",   # any supplemental text that will be included as tokens with the prompt
         "prompt": "",       # the prompt itself
-        "suggested_model": "",      # the suggested llm model to use with this prompt
-        "suggested_temperature": "",# the suggested model temperature parameter to use with this model and prompt
-        "suggested_max-tokens": "", # the suggested number of max tokens parameter to set for this model and prompt
-        "suggested_top-p": "",      # the suggested top-p parameter to set for this model and prompt
-        "suggested_top-k": "",      # the suggested top-k parameter to set for this model and prompt
+        "suggested_model": "",       # the suggested llm model to use with this prompt
+        "suggested_temperature": 0.0,# the suggested model temperature parameter to use with this model and prompt
+        "suggested_max-tokens": 0,   # the suggested number of max tokens parameter to set for this model and prompt
+        "suggested_top-p": 0.0,      # the suggested top-p parameter to set for this model and prompt
+        "suggested_top-k": 0,        # the suggested top-k parameter to set for this model and prompt
     }
 }
 ```

@@ -9,8 +9,8 @@
     "references": [],
     "prompt": "Please answer the following question as if you were a pirate: ",
     "suggested_model": "Claude v3",
-    "suggested_temperature": "0.9",
-    "suggested_max-tokens": "100",
-    "suggested_top-p": "0.999",
-    "suggested_top-k": "250"
+    "suggested_temperature": 0.7,
+    "suggested_max-tokens": 142,
+    "suggested_top-p": 0.999,
+    "suggested_top-k": 250
 }

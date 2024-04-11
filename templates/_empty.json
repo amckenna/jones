@@ -9,8 +9,8 @@
     "references": [],
     "prompt": "",
     "suggested_model": "",
-    "suggested_temperature": "",
-    "suggested_max-tokens": "",
-    "suggested_top-p": "",
-    "suggested_top-k": ""
+    "suggested_temperature": 0.0,
+    "suggested_max-tokens": 0,
+    "suggested_top-p": 0.0,
+    "suggested_top-k": 0
 }
