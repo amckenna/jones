@@ -6,7 +6,7 @@
     "updated": "2024-04-02",
     "notes": "The answer will mostly stay the same, in terms of content, but be in the voice of a pirate. It\"s silly, so not to be used seriously",
     "description": "This prompt will instruct the model to speak like a pirate, changing the tone, structure, and grammer.",
-    "supplement": "",
+    "references": [],
     "prompt": "Please answer the following question as if you were a pirate: ",
     "suggested_model": "Claude v3",
     "suggested_temperature": "0.9",
